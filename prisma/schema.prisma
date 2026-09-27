@@ -1,0 +1,244 @@
+// ============================================================
+//  عائلة الزغارنة — Database Schema
+//  PostgreSQL + Prisma
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------- المستخدمون والصلاحيات ----------------
+
+enum RoleName {
+  SUPER_ADMIN
+  EDITOR
+  MODERATOR
+}
+
+model Role {
+  id    String   @id @default(cuid())
+  name  RoleName @unique
+  users User[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  news       News[]
+  articles   Article[]
+  auditLogs  AuditLog[]
+}
+
+// ---------------- التصنيفات (مشتركة) ----------------
+
+model Category {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  section   String   // news | sports | education | articles ...
+  createdAt DateTime @default(now())
+
+  news     News[]
+  articles Article[]
+  sports   SportsNews[]
+}
+
+// ---------------- الأخبار ومصادرها ----------------
+
+enum SourceType {
+  RSS
+  API
+  MANUAL
+}
+
+enum SourceStatus {
+  ACTIVE
+  PAUSED
+  ERROR
+}
+
+model NewsSource {
+  id              String       @id @default(cuid())
+  name            String
+  type            SourceType
+  rssUrl          String?
+  apiUrl          String?
+  status          SourceStatus @default(ACTIVE)
+  fetchIntervalMinutes Int     @default(30) // قابل للتعديل من لوحة الإدارة، يحترم شروط المصدر
+  lastFetchedAt   DateTime?
+  lastError       String?
+  categoryDefault String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  news       News[]
+  sportsNews SportsNews[]
+}
+
+model News {
+  id          String    @id @default(cuid())
+  title       String
+  summary     String
+  imageUrl    String?
+  sourceId    String
+  source      NewsSource @relation(fields: [sourceId], references: [id])
+  sourceUrl   String    // رابط "اقرأ الخبر كاملًا" في المصدر الأصلي
+  externalId  String    // معرف/رابط فريد من المصدر لمنع التكرار
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  publishedAt DateTime
+  isPublished Boolean   @default(true)
+  isPinned    Boolean   @default(false)
+  authorId    String?
+  author      User?     @relation(fields: [authorId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([sourceId, externalId])
+  @@index([publishedAt])
+  @@index([categoryId])
+}
+
+model SportsNews {
+  id          String     @id @default(cuid())
+  title       String
+  summary     String
+  imageUrl    String?
+  sourceId    String
+  source      NewsSource @relation(fields: [sourceId], references: [id])
+  sourceUrl   String
+  externalId  String
+  categoryId  String?
+  category    Category?  @relation(fields: [categoryId], references: [id])
+  publishedAt DateTime
+  isPublished Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+
+  @@unique([sourceId, externalId])
+  @@index([publishedAt])
+}
+
+// ---------------- التعليم الفلسطيني ----------------
+
+model Education {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  section     String   // ministry | schools | universities | tawjihi | scholarships | e-learning | materials | guides
+  sourceName  String   // اسم الجهة الرسمية الموثقة لكل معلومة
+  sourceUrl   String?
+  publishedAt DateTime @default(now())
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ---------------- المقالات ----------------
+
+model Article {
+  id          String    @id @default(cuid())
+  title       String
+  imageUrl    String?
+  content     String
+  keywords    String[]
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  authorId    String
+  author      User      @relation(fields: [authorId], references: [id])
+  publishedAt DateTime?
+  isPublished Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ---------------- القرآن الكريم ----------------
+
+model QuranSurah {
+  id         String @id @default(cuid())
+  number     Int    @unique
+  nameArabic String
+  audioUrl   String // رابط تلاوة مرخص لكل سورة، يُدار من لوحة التحكم
+  durationSeconds Int?
+}
+
+model RadioStream {
+  id        String   @id @default(cuid())
+  title     String
+  streamUrl String   // قابل للتغيير من لوحة الإدارة دون تعديل الكود
+  isActive  Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------- العائلة ----------------
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  name      String
+  bio       String?
+  photoUrl  String?
+  branch    String?  // فرع العائلة، لبناء شجرة العائلة
+  parentId  String?
+  parent    FamilyMember?  @relation("FamilyTree", fields: [parentId], references: [id])
+  children  FamilyMember[] @relation("FamilyTree")
+  createdAt DateTime @default(now())
+}
+
+model FamilyEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  imageUrl    String?
+  eventDate   DateTime
+  createdAt   DateTime @default(now())
+}
+
+// ---------------- الوسائط ----------------
+
+model GalleryImage {
+  id        String   @id @default(cuid())
+  title     String?
+  imageUrl  String
+  category  String?
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  thumbnailUrl String?
+  embedUrl     String   // Embed مسموح من مزود الفيديو فقط
+  sourceName   String
+  publishedAt  DateTime @default(now())
+}
+
+// ---------------- الإعدادات والسجلات ----------------
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}

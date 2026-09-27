@@ -1,0 +1,50 @@
+{
+  "name": "zagharna-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "عائلة الزغارنة — منصة رقمية عائلية وثقافية وإخبارية وتعليمية ورياضية",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "ingest:news": "tsx src/services/newsIngestion/runOnce.ts"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@prisma/client": "5.18.0",
+    "next-auth": "4.24.7",
+    "bcryptjs": "2.4.3",
+    "zod": "3.23.8",
+    "fast-xml-parser": "4.4.1",
+    "node-cron": "3.0.3",
+    "ioredis": "5.4.1",
+    "pino": "9.3.2",
+    "date-fns": "3.6.0",
+    "clsx": "2.1.1"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "@types/node": "20.14.15",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "@types/bcryptjs": "2.4.6",
+    "@types/node-cron": "3.0.11",
+    "prisma": "5.18.0",
+    "tailwindcss": "3.4.9",
+    "postcss": "8.4.41",
+    "autoprefixer": "10.4.20",
+    "tsx": "4.16.5",
+    "vitest": "2.0.5",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.5"
+  }
+}
